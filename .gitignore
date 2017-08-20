@@ -1,6 +1,11 @@
 # Prerequisites
 *.d
 
+# IDE files
+*.project
+*.workspace
+*.sln
+
 # Compiled Object files
 *.slo
 *.lo
