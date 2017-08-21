@@ -37,10 +37,10 @@ int idxstrlen(char* mem, uint max_buf, uint max_len, uint idx)
     return n;
 } */
 
-bool parseHeader(FILE* file, r_header* header)
+uint parseHeader(FILE* file, r_header* header)
 {
-    char buf[sizeof(r_header)];
-    fread(buf, 1, sizeof(r_header), file);
+    char buf[512];
+    fread(buf, 256, 2, file);
     
     int magic = REPLAY_MAGIC_BE;
     if (!strncmp(buf, (const char*)&magic, 4))
@@ -48,6 +48,7 @@ bool parseHeader(FILE* file, r_header* header)
     
     printf("Replay version: %d\n", buf[4]);
     
+    // Note: string sizes are stored before them
     // Read map name
     uint i = 5;
     uint16 size = buf[i];
@@ -56,16 +57,35 @@ bool parseHeader(FILE* file, r_header* header)
     header->m_szMapName[size] = '\0';
     i += size;
     
-    //Read player name
+    // Read player name
     size = buf[i];
     i += sizeof(uint16);
     memcpy(header->m_szPlayerName, &buf[i], size);
     header->m_szPlayerName[size] = '\0';
-    
     i += size;
-    memcpy(&header->m_ulSteamID, &buf[i], sizeof(uint64) + sizeof(float) + sizeof(float) + sizeof(uint32) + sizeof(time_t) + sizeof(int));
     
-    return 1;
+    // Read other metadata, starting with the steamid
+    fread(&header->m_ulSteamID, sizeof(uint64), 1, file);
+    fread(&header->m_fTickInterval, sizeof(float), 1, file);
+    fread(&header->m_fRunTime, sizeof(float), 1, file);
+    fread(&header->m_iRunFlags, sizeof(uint32), 1, file);
+    fread(&header->m_iRunDate, sizeof(time_t), 1, file);
+    fread(&header->m_iStartDif, sizeof(int), 1, file);
+    
+    return i + sizeof(uint64) + sizeof(float) + sizeof(float) + sizeof(uint32) + sizeof(time_t) + sizeof(int);
+}
+
+r_runStats* parseRunStats(FILE* file, r_runStats* stats)
+{
+    stats->m_iTotalZones = fgetc(file);
+    //stats->m_iTotalZones = static_cast<uint8>(stats->m_iTotalZones);
+    for (uint i = 0; i <= stats->m_iTotalZones; ++i) {
+        for (uint n = 0; n < 14; ++n) {
+            //Sure would be nice if the data was stored contiguiously...
+            uint offset = 65 * n;
+            fread(stats->m_iZoneJumps + i + offset, 4, 1, file);
+        }
+    }
 }
 
 int main(int argc, char* argv[])
@@ -93,11 +113,26 @@ int main(int argc, char* argv[])
         soft("Multiple files recieved; accepting only the first one");
         
     FILE* replayFile = fopen(args.Files()[0], "r");
+    fseek(replayFile, 0, SEEK_SET);
     r_header header;
-    if (parseHeader(replayFile, &header))
-        header.print();
-    else
+    uint headerlen = parseHeader(replayFile, &header);
+    if (headerlen) {
+        header.print(headerlen);
+    }
+    else {
         soft("Unknown error parsing header"); //Not possible... yet
+    }
+    
+    //Read a single byte that tells us if there are run stats
+    fseek(replayFile, headerlen, SEEK_SET);
+    char rs = fgetc(replayFile);
+    
+    r_runStats runStats;
+    if (bool(rs)) {
+        parseRunStats(replayFile, &runStats);
+    }
+    runStats.print();
+        
     
     fclose(replayFile);
     
