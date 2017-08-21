@@ -8,13 +8,17 @@
 #define REPLAY_MAGIC_LE 0x524D4F4D
 #define REPLAY_MAGIC_BE 0x4D4F4D52
 
-enum { OPT_HELP, OPT_FIN = 100 };
+enum { OPT_HELP, OPT_FIN = 100};
 
 CSimpleOpt::SOption g_Options[] =
 {
     {1, "-h", SO_NONE},
     {2, "-r", SO_NONE},
     {3, "-f", SO_NONE},
+    {4, "-n", SO_NONE},
+    {4, "--none", SO_NONE},
+    {5, "--nocolor", SO_NONE},
+    {OPT_HELP, "--help", SO_NONE},
     SO_END_OF_OPTIONS
 };
 
@@ -38,6 +42,19 @@ int idxstrlen(char* mem, uint max_buf, uint max_len, uint idx)
 
     return n;
 } */
+
+void showUsage()
+{
+    printf(
+        "Usage: rpts [options] file\n"
+        "\n"
+        "-h                 Prints header data\n"
+        "-r                 Prints the data in the run stats block\n"
+        "-f                 Prints data in every frame\n"
+        "\n"
+    );
+    exit(EXIT_SUCCESS);
+}
 
 uint parseHeader(FILE* file, r_header* header)
 {
@@ -109,6 +126,7 @@ int main(int argc, char* argv[])
     CSimpleOpt args(argc, argv, g_Options);
     
     bool pHeaderOpt = false, pStatsOpt = false, pFramesOpt = false;
+    bool pNone = false;
     
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
@@ -122,10 +140,15 @@ int main(int argc, char* argv[])
                 case 3:
                     pFramesOpt = true;
                     break;
+                case 4:
+                    pNone = true;
+                    break;
+                case OPT_HELP:
+                    showUsage();
             }
         }
         else {
-            fatal("Invalid argument: %s\n", args.OptionText());
+            showUsage();
         }
     }
     
