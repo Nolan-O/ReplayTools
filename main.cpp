@@ -8,11 +8,13 @@
 #define REPLAY_MAGIC_LE 0x524D4F4D
 #define REPLAY_MAGIC_BE 0x4D4F4D52
 
-enum { OPT_HELP, OPT_FLAG, OPT_ARG };
+enum { OPT_HELP, OPT_FIN = 100 };
 
 CSimpleOpt::SOption g_Options[] =
 {
-    {OPT_FLAG, "-f", SO_NONE},
+    {1, "-h", SO_NONE},
+    {2, "-r", SO_NONE},
+    {3, "-f", SO_NONE},
     SO_END_OF_OPTIONS
 };
 
@@ -106,11 +108,20 @@ int main(int argc, char* argv[])
 {
     CSimpleOpt args(argc, argv, g_Options);
     
+    bool pHeaderOpt = false, pStatsOpt = false, pFramesOpt = false;
+    
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
-            if (args.OptionId() == OPT_FLAG) {
-                if (args.OptionText() == "-f")
-                    printf("f!!!\n");
+            switch (args.OptionId()) {
+                case 1:
+                    pHeaderOpt = true;
+                    break;
+                case 2:
+                    pStatsOpt = true;
+                    break;
+                case 3:
+                    pFramesOpt = true;
+                    break;
             }
         }
         else {
@@ -131,7 +142,8 @@ int main(int argc, char* argv[])
     r_header header;
     uint headerlen = parseHeader(replayFile, &header);
     if (headerlen) {
-        header.print(headerlen);
+        if (pHeaderOpt)
+            header.print(headerlen);
     }
     else {
         soft("Unknown error parsing header"); //Not possible... yet
@@ -144,7 +156,8 @@ int main(int argc, char* argv[])
     r_runStats runStats;
     if (bool(rs)) {
         parseRunStats(replayFile, &runStats);
-        runStats.print();
+        if (pStatsOpt)
+            runStats.print();
     }
     
     uint frames;
@@ -152,7 +165,8 @@ int main(int argc, char* argv[])
     r_frame frame;
     for (uint i = 1; i <= frames; ++i) {
         parseFrame(replayFile, &frame);
-        frame.print(i);
+        if (pFramesOpt)
+            frame.print(i);
     }
     
     fclose(replayFile);
