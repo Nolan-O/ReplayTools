@@ -37,6 +37,15 @@ struct r_header
 
 struct r_frame
 {
+    void print(uint fnum)
+    {
+        printf(P_COLOR_RED "Frame %d : ", fnum);
+        printf(P_COLOR_RESET "%.2f %.2f %.2f", m_angEyeAngles.x, m_angEyeAngles.y, m_angEyeAngles.z);
+        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", m_vPlayerOrigin.x, m_vPlayerOrigin.z, m_vPlayerOrigin.y);
+        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", m_vPlayerViewOffset.x, m_vPlayerViewOffset.y, m_vPlayerViewOffset.z);
+        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%d\n", m_iPlayerButtons);
+    }
+    
     vec3 m_angEyeAngles;
     vec3 m_vPlayerOrigin;
     vec3 m_vPlayerViewOffset;
@@ -51,7 +60,7 @@ struct r_runStats
         printf(P_COLOR_RED "\nRun Stats block:");
         for (uint i = 0; i < m_iTotalZones; ++i) {
             printf(P_COLOR_CYAN"\n    Zone %d of %d%s\n" P_COLOR_RESET, i, m_iTotalZones, i ? "" : " (OVERALL)");
-            printf("\t%d\n\t%d\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n",
+            printf("\t%d\n\t%d\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\t%f\n\n",
                     m_iZoneJumps[i], m_iZoneStrafes[i], m_flZoneStrafeSyncAvg[i], m_flZoneStrafeSync2Avg[i], m_flZoneEnterTime[i], 
                     m_flZoneTime[i], m_flZoneVelocityMax3D[i], m_flZoneVelocityMax2D[i], m_flZoneVelocityAvg3D[i],
                     m_flZoneVelocityAvg2D[i], m_flZoneEnterSpeed3D[i], m_flZoneEnterSpeed2D[i], m_flZoneExitSpeed3D[i], 

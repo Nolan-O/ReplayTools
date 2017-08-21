@@ -75,7 +75,7 @@ uint parseHeader(FILE* file, r_header* header)
     return i + sizeof(uint64) + sizeof(float) + sizeof(float) + sizeof(uint32) + sizeof(time_t) + sizeof(int);
 }
 
-r_runStats* parseRunStats(FILE* file, r_runStats* stats)
+void parseRunStats(FILE* file, r_runStats* stats)
 {
     stats->m_iTotalZones = fgetc(file);
     //stats->m_iTotalZones = static_cast<uint8>(stats->m_iTotalZones);
@@ -86,6 +86,20 @@ r_runStats* parseRunStats(FILE* file, r_runStats* stats)
             fread(stats->m_iZoneJumps + i + offset, 4, 1, file);
         }
     }
+}
+
+void parseFrame(FILE* file, r_frame* frame)
+{
+    fread(&frame->m_angEyeAngles.x, 4, 1, file);
+    fread(&frame->m_angEyeAngles.y, 4, 1, file);
+    fread(&frame->m_angEyeAngles.z, 4, 1, file);
+    fread(&frame->m_vPlayerOrigin.x, 4, 1, file);
+    fread(&frame->m_vPlayerOrigin.y, 4, 1, file);
+    fread(&frame->m_vPlayerOrigin.z, 4, 1, file);
+    fread(&frame->m_vPlayerViewOffset.x, 4, 1, file);
+    fread(&frame->m_vPlayerViewOffset.y, 4, 1, file);
+    fread(&frame->m_vPlayerViewOffset.z, 4, 1, file);
+    fread(&frame->m_iPlayerButtons, 4, 1, file);
 }
 
 int main(int argc, char* argv[])
@@ -130,9 +144,16 @@ int main(int argc, char* argv[])
     r_runStats runStats;
     if (bool(rs)) {
         parseRunStats(replayFile, &runStats);
+        runStats.print();
     }
-    runStats.print();
-        
+    
+    uint frames;
+    fread(&frames, 4, 1, replayFile);
+    r_frame frame;
+    for (uint i = 1; i <= frames; ++i) {
+        parseFrame(replayFile, &frame);
+        frame.print(i);
+    }
     
     fclose(replayFile);
     
