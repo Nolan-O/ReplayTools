@@ -12,7 +12,7 @@ enum { OPT_HELP, OPT_FIN = 100};
 
 CSimpleOpt::SOption g_Options[] =
 {
-    {1, "-h", SO_NONE, SO_O_CLUMP},
+    {1, "-h", SO_NONE},
     {2, "-r", SO_NONE},
     {3, "-f", SO_NONE},
     {4, "-n", SO_NONE},
@@ -56,6 +56,7 @@ void showUsage()
         "-f                 Prints data in every frame\n"
         "-d, --diff         Prints diffs between frames\n"
         "-i                 Ignore vectors in frame output"
+        "-n                 Display keys non-numeically"
         "\n"
     );
     exit(EXIT_SUCCESS);
@@ -131,7 +132,7 @@ int main(int argc, char* argv[])
     CSimpleOpt args(argc, argv, g_Options);
     
     bool pHeaderOpt = false, pStatsOpt = false, pFramesOpt = false;
-    bool pDiffOpt = false, pIgnoreVecOpt = false;
+    bool pDiffOpt = false, pIgnoreVecOpt = false, pNumericKeys = false;
     
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
@@ -151,6 +152,9 @@ int main(int argc, char* argv[])
                     break;
                 case 7:
                     pIgnoreVecOpt = true;
+                    break;
+                case 4:
+                    pNumericKeys = true;
                     break;
                 case OPT_HELP:
                     showUsage();
@@ -199,7 +203,7 @@ int main(int argc, char* argv[])
         parseFrame(replayFile, &curFrame);
         
         if (pFramesOpt)
-            curFrame.print(i, pDiffOpt, pIgnoreVecOpt, &lastFrame);
+            curFrame.print(i, pDiffOpt, pIgnoreVecOpt, pNumericKeys, &lastFrame);
             
         memcpy(&lastFrame, &curFrame, sizeof(r_frame));
     }

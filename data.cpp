@@ -8,7 +8,7 @@ void r_header::print(uint len)
     printf("\t%s\n\t%s\n\t%llu\n\t%f\n\t%f\n\t%u\n\t%ld\n", m_szMapName, m_szPlayerName);
 }
 
-void r_frame::print(uint fnum, bool diff, bool ignoreVecs, r_frame* prev)
+void r_frame::print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev)
 {
     vec3 eyes, origin, offset;
     if (diff) {
@@ -41,7 +41,38 @@ void r_frame::print(uint fnum, bool diff, bool ignoreVecs, r_frame* prev)
         printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", offset.x, offset.y, offset.z);
         printf(P_COLOR_CYAN " || ");
     }
+    if (numericKeys) {
         printf(P_COLOR_RESET "%d\n", m_iPlayerButtons);
+    }
+    else {
+        const char* a = m_iPlayerButtons & IN_ATTACK ? "ATTACK " : "";
+        const char* b = m_iPlayerButtons & IN_JUMP ? "IN_JUMP " : "";
+        const char* c = m_iPlayerButtons & IN_DUCK ? "IN_DUCK " : "";
+        const char* d = m_iPlayerButtons & IN_FORWARD ? "IN_FORWARD " : "";
+        const char* e = m_iPlayerButtons & IN_BACK ? "IN_BACK " : "";
+        const char* f = m_iPlayerButtons & IN_USE ? "IN_USE " : "";
+        const char* g = m_iPlayerButtons & IN_CANCEL ? "IN_CANCEL " : "";
+        const char* h = m_iPlayerButtons & IN_LEFT ? "IN_LEFT " : "";
+        const char* i = m_iPlayerButtons & IN_RIGHT ? "IN_RIGHT " : "";
+        const char* j = m_iPlayerButtons & IN_MOVELEFT ? "IN_MOVELEFT " : "";
+        const char* k = m_iPlayerButtons & IN_MOVERIGHT ? "IN_MOVERIGHT " : "";
+        const char* l = m_iPlayerButtons & IN_ATTACK2 ? "IN_ATTACK2 " : "";
+        const char* m = m_iPlayerButtons & IN_RUN ? "IN_RUN " : "";
+        const char* n = m_iPlayerButtons & IN_RELOAD ? "IN_RELOAD " : "";
+        const char* o = m_iPlayerButtons & IN_ALT1 ? "IN_ALT1 " : "";
+        const char* p = m_iPlayerButtons & IN_ALT2 ? "IN_ALT2 " : "";
+        const char* q = m_iPlayerButtons & IN_SCORE ? "IN_SCORE " : "";
+        const char* r = m_iPlayerButtons & IN_SPEED ? "IN_SPEED " : "";
+        const char* s = m_iPlayerButtons & IN_WALK ? "IN_WALK " : "";
+        const char* t = m_iPlayerButtons & IN_ZOOM ? "IN_ZOOM " : "";
+        const char* u = m_iPlayerButtons & IN_WEAPON1 ? "IN_WEAPON1 " : "";
+        const char* v = m_iPlayerButtons & IN_WEAPON2 ? "IN_WEAPON2 " : "";
+        const char* w = m_iPlayerButtons & IN_BULLRUSH ? "IN_BULLRUSH " : "";
+        const char* x = m_iPlayerButtons & IN_GRENADE1 ? "IN_GRENADE1 " : "";
+        const char* y = m_iPlayerButtons & IN_GRENADE2 ? "IN_GRENADE2 " : "";
+        const char* z = m_iPlayerButtons & IN_ATTACK3 ? "IN_ATTACK3 " : "";
+        printf(P_COLOR_RESET "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
+    }
 }
 
 void r_runStats::print()
