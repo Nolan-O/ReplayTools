@@ -7,8 +7,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(SOURCES 
     "main.cpp"
     "simpleopt.h"
-    "data.h"
+    "data.cpp"
     "error.h"
+    "error.cpp"
+    "data.h"
     )
 
 add_executable(rpts ${SOURCES})

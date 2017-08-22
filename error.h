@@ -10,19 +10,6 @@
 #define P_COLOR_CYAN    "\x1b[36m"
 #define P_COLOR_RESET   "\x1b[0m"
 
-void fatal(const char* msg, ...)
-{
-    va_list v;
-    printf(P_COLOR_RED ">> Fatal : " P_COLOR_RESET);
-    printf(msg, v);
-    printf("\n");
-    exit(EXIT_FAILURE);
-}
+void fatal(const char* msg, ...);
 
-void soft(const char* msg, ...)
-{
-    va_list v;
-    printf(P_COLOR_RED ">> : " P_COLOR_RESET);
-    printf(msg, v);
-    printf("\n");
-}
+void soft(const char* msg, ...);

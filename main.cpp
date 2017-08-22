@@ -18,6 +18,8 @@ CSimpleOpt::SOption g_Options[] =
     {4, "-n", SO_NONE},
     {4, "--none", SO_NONE},
     {5, "--nocolor", SO_NONE},
+    {6, "-d", SO_NONE},
+    {6, "--diff", SO_NONE},
     {OPT_HELP, "--help", SO_NONE},
     SO_END_OF_OPTIONS
 };
@@ -51,6 +53,7 @@ void showUsage()
         "-h                 Prints header data\n"
         "-r                 Prints the data in the run stats block\n"
         "-f                 Prints data in every frame\n"
+        "-d, --diff         Prints diffs between frames\n"
         "\n"
     );
     exit(EXIT_SUCCESS);
@@ -126,7 +129,7 @@ int main(int argc, char* argv[])
     CSimpleOpt args(argc, argv, g_Options);
     
     bool pHeaderOpt = false, pStatsOpt = false, pFramesOpt = false;
-    bool pNone = false;
+    bool pDiffOpt = false;
     
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
@@ -140,8 +143,9 @@ int main(int argc, char* argv[])
                 case 3:
                     pFramesOpt = true;
                     break;
-                case 4:
-                    pNone = true;
+                case 6:
+                    pFramesOpt = true;
+                    pDiffOpt = true;
                     break;
                 case OPT_HELP:
                     showUsage();
@@ -185,11 +189,14 @@ int main(int argc, char* argv[])
     
     uint frames;
     fread(&frames, 4, 1, replayFile);
-    r_frame frame;
+    r_frame curFrame, lastFrame;
     for (uint i = 1; i <= frames; ++i) {
-        parseFrame(replayFile, &frame);
+        parseFrame(replayFile, &curFrame);
+        
         if (pFramesOpt)
-            frame.print(i);
+            curFrame.print(i, pDiffOpt, &lastFrame);
+            
+        memcpy(&lastFrame, &curFrame, sizeof(r_frame));
     }
     
     fclose(replayFile);
