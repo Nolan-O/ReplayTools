@@ -32,7 +32,7 @@ struct r_header
 
 struct r_frame
 {
-    void print(uint fnum, bool diff, r_frame* prev);
+    void print(uint fnum, bool diff, bool ignoreVecs, r_frame* prev);
     
     vec3 m_angEyeAngles;
     vec3 m_vPlayerOrigin;

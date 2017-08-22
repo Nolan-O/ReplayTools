@@ -8,7 +8,7 @@ void r_header::print(uint len)
     printf("\t%s\n\t%s\n\t%llu\n\t%f\n\t%f\n\t%u\n\t%ld\n", m_szMapName, m_szPlayerName);
 }
 
-void r_frame::print(uint fnum, bool diff, r_frame* prev)
+void r_frame::print(uint fnum, bool diff, bool ignoreVecs, r_frame* prev)
 {
     vec3 eyes, origin, offset;
     if (diff) {
@@ -35,18 +35,13 @@ void r_frame::print(uint fnum, bool diff, r_frame* prev)
     }
     
     printf(P_COLOR_RED "Frame %d : ", fnum);
-    if (diff) {
+    if (!ignoreVecs) {
         printf(P_COLOR_RESET "%.2f %.2f %.2f", eyes.x, eyes.y, eyes.z);
         printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", origin.x, origin.y, origin.z);
         printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", offset.x, offset.y, offset.z);
-        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%d\n", m_iPlayerButtons);
+        printf(P_COLOR_CYAN " || ");
     }
-    else {
-        printf(P_COLOR_RESET "%.2f %.2f %.2f", eyes.x, eyes.y, eyes.z);
-        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", origin.x, origin.y, origin.z);
-        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", offset.x, offset.y, offset.z);
-        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%d\n", m_iPlayerButtons);
-    }
+        printf(P_COLOR_RESET "%d\n", m_iPlayerButtons);
 }
 
 void r_runStats::print()
