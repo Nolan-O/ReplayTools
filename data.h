@@ -60,11 +60,34 @@ struct r_header
 struct r_frame
 {
     void print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev);
+    void discreteStatStep(r_frame* prevFrame, uint tick);
     
     vec3 m_angEyeAngles;
     vec3 m_vPlayerOrigin;
     vec3 m_vPlayerViewOffset;
     int m_iPlayerButtons;
+    
+    struct m_
+    {
+        m_() : dirChanged(false),
+            keyChanged(false),
+            keyTransTick(0),
+            angTransTick(0),
+            dtAng(0.0),
+            transLen(0),
+            transCompleted(false)
+        { }
+        
+        bool dirChanged;
+        bool keyChanged;
+        int keyTransTick;
+        int angTransTick;
+        float dtAng;
+        int transLen;
+        bool transCompleted;
+    };
+    
+    m_ meta;
 };
 
 

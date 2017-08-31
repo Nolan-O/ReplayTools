@@ -196,11 +196,15 @@ int main(int argc, char* argv[])
             runStats.print();
     }
     
+    //Loop through all frames in the file
     uint frames;
     fread(&frames, 4, 1, replayFile);
-    r_frame curFrame, lastFrame;
+    r_frame lastFrame;
     for (uint i = 1; i <= frames; ++i) {
+        r_frame curFrame;
         parseFrame(replayFile, &curFrame);
+        
+        curFrame.discreteStatStep(&lastFrame, i);
         
         if (pFramesOpt)
             curFrame.print(i, pDiffOpt, pIgnoreVecOpt, pNumericKeys, &lastFrame);

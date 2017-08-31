@@ -34,6 +34,24 @@ void r_frame::print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_f
         offset.z = m_vPlayerViewOffset.z;
     }
     
+    const char* dirmsg = " ";
+    const char* keymsg = " ";
+    const char* transmsg;
+    
+    if (meta.dirChanged)
+        if (!prev->meta.dirChanged)
+        dirmsg = P_COLOR_GREEN "*" P_COLOR_RESET;
+    else if (prev->meta.dirChanged)
+        dirmsg = P_COLOR_RED "*" P_COLOR_RESET;
+        
+    if (meta.keyChanged)
+        if (!prev->meta.keyChanged)
+        keymsg = P_COLOR_GREEN "*" P_COLOR_RESET;
+    else if (prev->meta.keyChanged)
+        keymsg = P_COLOR_RED "*" P_COLOR_RESET;
+
+    printf("%s%s%s", keymsg, dirmsg, meta.transCompleted ? "*" : " ");
+    
     printf(P_COLOR_RED "Frame %d : ", fnum);
     if (!ignoreVecs) {
         printf(P_COLOR_RESET "%.2f %.2f %.2f", eyes.x, eyes.y, eyes.z);
@@ -72,6 +90,84 @@ void r_frame::print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_f
         const char* y = m_iPlayerButtons & IN_GRENADE2 ? "IN_GRENADE2 " : "";
         const char* z = m_iPlayerButtons & IN_ATTACK3 ? "IN_ATTACK3 " : "";
         printf(P_COLOR_RESET "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
+    }
+}
+
+inline static bool EvaluateTransition_Keys(int dir, float dtAng, bool otherStatus)
+{
+    if (!otherStatus)
+        return true;
+    else if (dir == IN_MOVERIGHT && dtAng <= 0)
+        return true;
+    else if (dir == IN_MOVELEFT && dtAng >= 0)
+        return true;
+        
+    return false;
+}
+
+inline static bool EvaluateTransition_Ang(int keys, float dtAng, bool otherStatus)
+{
+    if (!otherStatus)
+        return true;
+    else if (keys & IN_MOVERIGHT && !(keys & IN_MOVELEFT) && dtAng <= 0)
+        return true;
+    else if (keys & IN_MOVELEFT && !(keys & IN_MOVERIGHT) && dtAng >= 0)
+        return true;
+        
+    return false;
+}
+
+void r_frame::discreteStatStep(r_frame* prev, uint tick)
+{
+    float dtAng = m_angEyeAngles.y - prev->m_angEyeAngles.y;
+    if (dtAng > 180.0)
+        dtAng -= 360;
+    else if (dtAng < -180.0)
+        dtAng += 360;
+    
+    meta.dtAng = dtAng;
+    
+    if (!(m_iPlayerButtons & IN_MOVERIGHT && m_iPlayerButtons & IN_MOVELEFT))
+    {
+        if (m_iPlayerButtons & IN_MOVELEFT) {
+            if ((prev->m_iPlayerButtons & IN_MOVERIGHT && prev->m_iPlayerButtons & IN_MOVELEFT) || !(prev->m_iPlayerButtons & IN_MOVELEFT))
+            {
+                meta.keyChanged = EvaluateTransition_Keys(IN_MOVELEFT, dtAng, meta.dirChanged);
+                if (meta.keyChanged)
+                    meta.keyTransTick = tick;
+                else
+                    meta.dirChanged = false;
+            }
+        }
+        else if (m_iPlayerButtons & IN_MOVERIGHT) {
+            if ((prev->m_iPlayerButtons & IN_MOVERIGHT && prev->m_iPlayerButtons & IN_MOVELEFT) || !(prev->m_iPlayerButtons & IN_MOVERIGHT))
+            {
+                meta.keyChanged = EvaluateTransition_Keys(IN_MOVERIGHT, dtAng, meta.keyChanged);
+                if (meta.keyChanged)
+                    meta.keyTransTick = tick;
+                else
+                    meta.dirChanged = false;
+            }
+        }
+    }
+    if (dtAng != 0.0 && ((dtAng < 0.0 && prev->meta.dtAng > 0.0) || (dtAng > 0.0 && prev->meta.dtAng < 0.0) || prev->meta.dtAng == 0.0))
+    {
+        meta.dirChanged = EvaluateTransition_Ang(m_iPlayerButtons, dtAng, meta.keyChanged);
+        if (meta.dirChanged)
+            meta.angTransTick = tick;
+        else
+            meta.keyChanged = false;
+    }
+    if (meta.keyChanged && meta.dirChanged)
+    {
+        int t = meta.keyTransTick - meta.angTransTick;
+        meta.keyChanged = false;
+        meta.dirChanged = false;
+        if (t > -26 && t < 26)
+        {
+            meta.transLen = t;
+            meta.transCompleted = true;
+        }
     }
 }
 
