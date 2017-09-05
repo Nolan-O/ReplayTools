@@ -33,11 +33,24 @@ typedef unsigned long long  uint64;
 typedef unsigned int        uint32;
 typedef unsigned short      uint16;
 typedef unsigned char       uint8;
+typedef unsigned int        uint;
 
 #define MAX_STAGES 64
 
 struct vec3
 {
+    vec3() : 
+        x(0.0),
+        y(0.0),
+        z(0.0)
+    { }
+    vec3(float f)
+    {
+        x = f;
+        y = f;
+        z = f;
+    }
+
     float x;
     float y;
     float z;
@@ -59,6 +72,12 @@ struct r_header
 
 struct r_frame
 {
+    r_frame() : m_angEyeAngles(0.0),
+        m_vPlayerOrigin(0.0),
+        m_vPlayerViewOffset(0.0),
+        m_iPlayerButtons(0)
+    { }
+
     void print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev);
     void discreteStatStep(r_frame* prevFrame, uint tick);
     
