@@ -5,6 +5,11 @@
 *.project
 *.workspace
 *.sln
+*.config
+*.creator
+*.user
+*.files
+*.includes
 
 # Compiled Object files
 *.slo
@@ -35,3 +40,6 @@
 *.exe
 *.out
 *.app
+
+# Misc
+*.cmake
