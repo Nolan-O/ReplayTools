@@ -55,7 +55,7 @@ void showUsage()
         "-r                 Prints the data in the run stats block\n"
         "-f                 Prints data in every frame\n"
         "-d, --diff         Prints diffs between frames\n"
-        "-i                 Ignore vectors in frame output"
+        "-i                 Ignore vectors in frame output\n"
         "-n                 Display keys non-numeically"
         "\n"
     );
@@ -204,6 +204,7 @@ int main(int argc, char* argv[])
         r_frame curFrame;
         parseFrame(replayFile, &curFrame);
         
+        //The frame compares its self to another frame
         curFrame.discreteStatStep(&lastFrame, i);
         
         if (pFramesOpt)

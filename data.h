@@ -88,27 +88,37 @@ struct r_frame
     
     struct m_
     {
-        m_() : dirChanged(false),
-            keyChanged(false),
-            keyTransTick(0),
-            angTransTick(0),
+        m_() :
             dtAng(0.0),
-            transLen(0),
-            transCompleted(false)
+            transCompleted(false),
+            dirChanged(false),
+            keyChanged(false)
         { }
-        
+
+        float dtAng;
+        bool transCompleted;
         bool dirChanged;
         bool keyChanged;
-        int keyTransTick;
-        int angTransTick;
-        float dtAng;
-        int transLen;
-        bool transCompleted;
     };
     
     m_ meta;
 };
 
+struct tempStatInfo
+{
+    tempStatInfo() : keyTransTick(0),
+        angTransTick(0),
+        transLen(0),
+        dirChanged(false),
+        keyChanged(false)
+    { }
+
+    bool dirChanged;
+    bool keyChanged;
+    int keyTransTick;
+    int angTransTick;
+    int transLen;
+};
 
 struct r_runStats 
 {
