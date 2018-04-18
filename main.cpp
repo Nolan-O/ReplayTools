@@ -1,29 +1,14 @@
-#include "simpleopt.h"
+#include "options.h"
 #include "error.h"
 #include "data.h"
 #include <stdio.h>
 #include <string.h>
 #include "assert.h"
+#include "interface.h"
 
 #define REPLAY_MAGIC_LE 0x524D4F4D
 #define REPLAY_MAGIC_BE 0x4D4F4D52
-
-enum { OPT_HELP, OPT_FIN = 100};
-
-CSimpleOpt::SOption g_Options[] =
-{
-    {1, "-h", SO_NONE},
-    {2, "-r", SO_NONE},
-    {3, "-f", SO_NONE},
-    {4, "-n", SO_NONE},
-    {4, "--none", SO_NONE},
-    {5, "--nocolor", SO_NONE},
-    {6, "-d", SO_NONE},
-    {6, "--diff", SO_NONE},
-    {7, "-i", SO_NONE},
-    {OPT_HELP, "--help", SO_NONE},
-    SO_END_OF_OPTIONS
-};
+FILE* g_replayFile;
 
 /*
  * Searches a buffer up until the buffer's end or an arbitrary
@@ -45,22 +30,6 @@ int idxstrlen(char* mem, uint max_buf, uint max_len, uint idx)
 
     return n;
 } */
-
-void showUsage()
-{
-    printf(
-        "Usage: rpts [options] file\n"
-        "\n"
-        "-h                 Prints header data\n"
-        "-r                 Prints the data in the run stats block\n"
-        "-f                 Prints data in every frame\n"
-        "-d, --diff         Prints diffs between frames\n"
-        "-i                 Ignore vectors in frame output\n"
-        "-n                 Display keys non-numeically"
-        "\n"
-    );
-    exit(EXIT_SUCCESS);
-}
 
 uint parseHeader(FILE* file, r_header* header)
 {
@@ -127,34 +96,80 @@ void parseFrame(FILE* file, r_frame* frame)
     fread(&frame->m_iPlayerButtons, 4, 1, file);
 }
 
+void dump()
+{
+    r_header header;
+    uint headerlen = parseHeader(g_replayFile, &header);
+    if (headerlen) {
+        if (g_options.pHeaderOpt)
+            header.print(headerlen);
+    }
+    else {
+        soft("Unknown error parsing header"); //Not possible... yet
+    }
+
+    //Read a single byte that tells us if there are run stats
+    fseek(g_replayFile, headerlen, SEEK_SET);
+    char rs = fgetc(g_replayFile);
+
+    r_runStats runStats;
+    if (bool(rs)) {
+        parseRunStats(g_replayFile, &runStats);
+        if (g_options.pStatsOpt)
+            runStats.print();
+    }
+
+    if (!g_options.pFramesOpt)
+        return;
+
+    //Loop through all frames in the file
+    char frameString[335]; //longest possible frame string
+    uint frames;
+    fread(&frames, 4, 1, g_replayFile);
+    r_frame lastFrame;
+    for (uint i = 1; i <= frames; ++i) {
+        r_frame curFrame;
+        parseFrame(g_replayFile, &curFrame);
+
+        //The frame compares its self to another frame
+        curFrame.discreteStatStep(&lastFrame, i);
+
+        if (g_options.pFramesOpt)
+            curFrame.print(frameString, i, g_options.pDiffOpt, g_options.pIgnoreVecOpt, g_options.pNumericKeys, &lastFrame);
+
+        printf(frameString);
+        memcpy(&lastFrame, &curFrame, sizeof(r_frame));
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    CSimpleOpt args(argc, argv, g_Options);
-    
-    bool pHeaderOpt = false, pStatsOpt = false, pFramesOpt = false;
-    bool pDiffOpt = false, pIgnoreVecOpt = false, pNumericKeys = false;
+    CSimpleOpt args(argc, argv, g_sOptions);
     
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
             switch (args.OptionId()) {
                 case 1:
-                    pHeaderOpt = true;
+                    g_options.pHeaderOpt = true;      // -h
                     break;
                 case 2:
-                    pStatsOpt = true;
+                    g_options.pStatsOpt = true;       // -r
                     break;
                 case 3:
-                    pFramesOpt = true;
+                    g_options.pFramesOpt = true;      // -f
                     break;
                 case 6:
-                    pFramesOpt = true;
-                    pDiffOpt = true;
+                    g_options.pFramesOpt = true;      // --diff
+                    g_options.pDiffOpt = true;
                     break;
                 case 7:
-                    pIgnoreVecOpt = true;
+                    g_options.pIgnoreVecOpt = true;   // -i
                     break;
                 case 4:
-                    pNumericKeys = true;
+                    g_options.pNumericKeys = true;    // -n
+                    break;
+                case 8:
+                    g_options.pUninteractive = true;  // --dump
                     break;
                 case OPT_HELP:
                     showUsage();
@@ -173,47 +188,17 @@ int main(int argc, char* argv[])
     if (args.FileCount() > 1)
         soft("Multiple files recieved; accepting only the first one");
         
-    FILE* replayFile = fopen(args.Files()[0], "r");
-    fseek(replayFile, 0, SEEK_SET);
-    r_header header;
-    uint headerlen = parseHeader(replayFile, &header);
-    if (headerlen) {
-        if (pHeaderOpt)
-            header.print(headerlen);
-    }
+    g_replayFile = fopen(args.Files()[0], "r");
+    fseek(g_replayFile, 0, SEEK_SET);
+
+    if (g_options.pUninteractive)
+        dump();
     else {
-        soft("Unknown error parsing header"); //Not possible... yet
+        g_interface.init();
+        //IO loop
+        while (g_interface.input()) {};
     }
-    
-    //Read a single byte that tells us if there are run stats
-    fseek(replayFile, headerlen, SEEK_SET);
-    char rs = fgetc(replayFile);
-    
-    r_runStats runStats;
-    if (bool(rs)) {
-        parseRunStats(replayFile, &runStats);
-        if (pStatsOpt)
-            runStats.print();
-    }
-    
-    //Loop through all frames in the file
-    uint frames;
-    fread(&frames, 4, 1, replayFile);
-    r_frame lastFrame;
-    for (uint i = 1; i <= frames; ++i) {
-        r_frame curFrame;
-        parseFrame(replayFile, &curFrame);
-        
-        //The frame compares its self to another frame
-        curFrame.discreteStatStep(&lastFrame, i);
-        
-        if (pFramesOpt)
-            curFrame.print(i, pDiffOpt, pIgnoreVecOpt, pNumericKeys, &lastFrame);
-            
-        memcpy(&lastFrame, &curFrame, sizeof(r_frame));
-    }
-    
-    fclose(replayFile);
-    
+
+    fclose(g_replayFile);
     return 0;
 }

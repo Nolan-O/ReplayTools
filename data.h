@@ -78,7 +78,7 @@ struct r_frame
         m_iPlayerButtons(0)
     { }
 
-    void print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev);
+    void print(char* buf, uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev);
     void discreteStatStep(r_frame* prevFrame, uint tick);
     
     vec3 m_angEyeAngles;

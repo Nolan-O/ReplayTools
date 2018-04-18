@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <cstdio>
+#include <string.h>
 #include "data.h"
 #include "error.h"
 
@@ -7,10 +9,11 @@ tempStatInfo g_statInfo;
 void r_header::print(uint len)
 {
     printf(P_COLOR_RED "\nHeader (%d bytes):\n" P_COLOR_RESET, len);
-    printf("\t%s\n\t%s\n\t%llu\n\t%f\n\t%f\n\t%u\n\t%ld\n", m_szMapName, m_szPlayerName);
+    printf("\t%s\n\t%s\n\t%llu\n\t%f\n\t%f\n\t%u\n\t%ld\n", m_szMapName, m_szPlayerName,
+                m_ulSteamID, m_fTickInterval, m_fRunTime, m_iRunFlags, m_iRunDate, m_iStartDif);
 }
 
-void r_frame::print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev)
+void r_frame::print(char* buf, uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_frame* prev)
 {
     vec3 eyes, origin, offset;
     if (diff) {
@@ -36,9 +39,13 @@ void r_frame::print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_f
         offset.z = m_vPlayerViewOffset.z;
     }
     
-    const char* dirmsg = " ";
+    //Making these const supresses a warning
+    //Seems like g++ is treating it as ' ' instead of " " since it's
+    //only one byte. Thus char* is the wrong type, but it shouldn't be.
     const char* keymsg = " ";
-    const char* transmsg = " ";
+    const char* dirmsg = " ";
+    char transmsg[4] = "  ";
+    uint printed = 0;
     
     if (meta.keyChanged)
         keymsg = P_COLOR_GREEN "*" P_COLOR_RESET;
@@ -46,52 +53,55 @@ void r_frame::print(uint fnum, bool diff, bool ignoreVecs, bool numericKeys, r_f
     if (meta.dirChanged)
         dirmsg = P_COLOR_GREEN "*" P_COLOR_RESET;
 
-    if (meta.transCompleted)
-        transmsg = "*";
+    if (meta.transCompleted) {
+        const char* tmp = (g_statInfo.transLen < 0 || g_statInfo.transLen > 9) ? "%d" : "%d ";
+        sprintf(transmsg, tmp, g_statInfo.transLen);
+    }
 
-    printf("%s%s%s", keymsg, dirmsg, transmsg);
+    printed += sprintf(buf + printed, "%s%s%s", keymsg, dirmsg, transmsg);
     
-    printf(P_COLOR_RED "Frame %d : ", fnum);
+    printed += sprintf(buf + printed, P_COLOR_RED "Frame %d ", fnum);
     if (!ignoreVecs) {
-        printf(P_COLOR_RESET "%.2f %.2f %.2f", eyes.x, eyes.y, eyes.z);
-        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", origin.x, origin.y, origin.z);
-        printf(P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", offset.x, offset.y, offset.z);
-        printf(P_COLOR_CYAN " || ");
+        printed += sprintf(buf + printed, P_COLOR_RESET "%.2f %.2f %.2f", eyes.x, eyes.y, eyes.z);
+        printed += sprintf(buf + printed, P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", origin.x, origin.y, origin.z);
+        printed += sprintf(buf + printed, P_COLOR_CYAN " || " P_COLOR_RESET "%.2f %.2f %.2f", offset.x, offset.y, offset.z);
+        printed += sprintf(buf + printed, P_COLOR_CYAN " || ");
     }
     if (numericKeys) {
-        printf(P_COLOR_RESET "%d\n", m_iPlayerButtons);
+        printed += sprintf(buf + printed, P_COLOR_RESET "%d\n", m_iPlayerButtons);
     }
     else {
         const char* a = m_iPlayerButtons & IN_ATTACK ? "ATTACK " : "";
-        const char* b = m_iPlayerButtons & IN_JUMP ? "IN_JUMP " : "";
-        const char* c = m_iPlayerButtons & IN_DUCK ? "IN_DUCK " : "";
-        const char* d = m_iPlayerButtons & IN_FORWARD ? "IN_FORWARD " : "";
-        const char* e = m_iPlayerButtons & IN_BACK ? "IN_BACK " : "";
-        const char* f = m_iPlayerButtons & IN_USE ? "IN_USE " : "";
-        const char* g = m_iPlayerButtons & IN_CANCEL ? "IN_CANCEL " : "";
-        const char* h = m_iPlayerButtons & IN_LEFT ? "IN_LEFT " : "";
-        const char* i = m_iPlayerButtons & IN_RIGHT ? "IN_RIGHT " : "";
-        const char* j = m_iPlayerButtons & IN_MOVELEFT ? "IN_MOVELEFT " : "";
-        const char* k = m_iPlayerButtons & IN_MOVERIGHT ? "IN_MOVERIGHT " : "";
-        const char* l = m_iPlayerButtons & IN_ATTACK2 ? "IN_ATTACK2 " : "";
-        const char* m = m_iPlayerButtons & IN_RUN ? "IN_RUN " : "";
-        const char* n = m_iPlayerButtons & IN_RELOAD ? "IN_RELOAD " : "";
-        const char* o = m_iPlayerButtons & IN_ALT1 ? "IN_ALT1 " : "";
-        const char* p = m_iPlayerButtons & IN_ALT2 ? "IN_ALT2 " : "";
-        const char* q = m_iPlayerButtons & IN_SCORE ? "IN_SCORE " : "";
-        const char* r = m_iPlayerButtons & IN_SPEED ? "IN_SPEED " : "";
-        const char* s = m_iPlayerButtons & IN_WALK ? "IN_WALK " : "";
-        const char* t = m_iPlayerButtons & IN_ZOOM ? "IN_ZOOM " : "";
-        const char* u = m_iPlayerButtons & IN_WEAPON1 ? "IN_WEAPON1 " : "";
-        const char* v = m_iPlayerButtons & IN_WEAPON2 ? "IN_WEAPON2 " : "";
-        const char* w = m_iPlayerButtons & IN_BULLRUSH ? "IN_BULLRUSH " : "";
-        const char* x = m_iPlayerButtons & IN_GRENADE1 ? "IN_GRENADE1 " : "";
-        const char* y = m_iPlayerButtons & IN_GRENADE2 ? "IN_GRENADE2 " : "";
-        const char* z = m_iPlayerButtons & IN_ATTACK3 ? "IN_ATTACK3 " : "";
-        printf(P_COLOR_RESET "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
+        const char* b = m_iPlayerButtons & IN_JUMP ? "JUMP " : "";
+        const char* c = m_iPlayerButtons & IN_DUCK ? "DUCK " : "";
+        const char* d = m_iPlayerButtons & IN_FORWARD ? "FORWARD " : "";
+        const char* e = m_iPlayerButtons & IN_BACK ? "BACK " : "";
+        const char* f = m_iPlayerButtons & IN_USE ? "USE " : "";
+        const char* g = m_iPlayerButtons & IN_CANCEL ? "CANCEL " : "";
+        const char* h = m_iPlayerButtons & IN_LEFT ? "LEFT " : "";
+        const char* i = m_iPlayerButtons & IN_RIGHT ? "RIGHT " : "";
+        const char* j = m_iPlayerButtons & IN_MOVELEFT ? "MOVELEFT " : "";
+        const char* k = m_iPlayerButtons & IN_MOVERIGHT ? "MOVERIGHT " : "";
+        const char* l = m_iPlayerButtons & IN_ATTACK2 ? "ATTACK2 " : "";
+        const char* m = m_iPlayerButtons & IN_RUN ? "RUN " : "";
+        const char* n = m_iPlayerButtons & IN_RELOAD ? "RELOAD " : "";
+        const char* o = m_iPlayerButtons & IN_ALT1 ? "ALT1 " : "";
+        const char* p = m_iPlayerButtons & IN_ALT2 ? "ALT2 " : "";
+        const char* q = m_iPlayerButtons & IN_SCORE ? "SCORE " : "";
+        const char* r = m_iPlayerButtons & IN_SPEED ? "SPEED " : "";
+        const char* s = m_iPlayerButtons & IN_WALK ? "WALK " : "";
+        const char* t = m_iPlayerButtons & IN_ZOOM ? "ZOOM " : "";
+        const char* u = m_iPlayerButtons & IN_WEAPON1 ? "WEAPON1 " : "";
+        const char* v = m_iPlayerButtons & IN_WEAPON2 ? "WEAPON2 " : "";
+        const char* w = m_iPlayerButtons & IN_BULLRUSH ? "BULLRUSH " : "";
+        const char* x = m_iPlayerButtons & IN_GRENADE1 ? "GRENADE1 " : "";
+        const char* y = m_iPlayerButtons & IN_GRENADE2 ? "GRENADE2 " : "";
+        const char* z = m_iPlayerButtons & IN_ATTACK3 ? "ATTACK3 " : "";
+        printed += sprintf(buf + printed, P_COLOR_RESET "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n", a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
     }
 }
 
+//Throws out some undesireable key transition detections
 inline static bool EvaluateTransition_Keys(int dir, float dtAng, bool otherStatus)
 {
     if (!otherStatus)
@@ -104,6 +114,7 @@ inline static bool EvaluateTransition_Keys(int dir, float dtAng, bool otherStatu
     return false;
 }
 
+//Throws out some undesireable angle transition detections
 inline static bool EvaluateTransition_Ang(int keys, float dtAng, bool otherStatus)
 {
     if (!otherStatus)

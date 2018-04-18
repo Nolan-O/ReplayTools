@@ -8,10 +8,16 @@ set(SOURCES
     "main.cpp"
     "simpleopt.h"
     "data.cpp"
+    "data.h"  
     "error.h"
     "error.cpp"
-    "data.h"
+    "interface.cpp"
+    "interface.h"
+    "options.h"
+    "options.cpp"
     )
 
 add_executable(rpts ${SOURCES})
 SET_TARGET_PROPERTIES(rpts PROPERTIES LINKER_LANGUAGE C)
+find_library(LIB_CURSES ncurses)
+target_link_libraries(rpts ${LIB_CURSES})
