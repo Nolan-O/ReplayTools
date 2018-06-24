@@ -8,7 +8,6 @@
 
 #define REPLAY_MAGIC_LE 0x524D4F4D
 #define REPLAY_MAGIC_BE 0x4D4F4D52
-FILE* g_replayFile;
 
 /*
  * Searches a buffer up until the buffer's end or an arbitrary
@@ -98,44 +97,32 @@ void parseFrame(FILE* file, r_frame* frame)
 
 void dump()
 {
-    r_header header;
-    uint headerlen = parseHeader(g_replayFile, &header);
-    if (headerlen) {
+    if (g_state.headerlen) {
         if (g_options.pHeaderOpt)
-            header.print(headerlen);
+            g_state.header.print(g_state.headerlen);
     }
     else {
         soft("Unknown error parsing header"); //Not possible... yet
     }
 
-    //Read a single byte that tells us if there are run stats
-    fseek(g_replayFile, headerlen, SEEK_SET);
-    char rs = fgetc(g_replayFile);
-
-    r_runStats runStats;
-    if (bool(rs)) {
-        parseRunStats(g_replayFile, &runStats);
-        if (g_options.pStatsOpt)
-            runStats.print();
-    }
+    if (g_options.pStatsOpt && g_state.hasRunStats)
+        g_state.runStats.print();
 
     if (!g_options.pFramesOpt)
         return;
 
     //Loop through all frames in the file
     char frameString[335]; //longest possible frame string
-    uint frames;
-    fread(&frames, 4, 1, g_replayFile);
     r_frame lastFrame;
-    for (uint i = 1; i <= frames; ++i) {
+    for (uint i = 1; i <= g_state.frameCt; ++i) {
         r_frame curFrame;
-        parseFrame(g_replayFile, &curFrame);
+        parseFrame(g_state.replayFile, &curFrame);
 
         //The frame compares its self to another frame
         curFrame.discreteStatStep(&lastFrame, i);
 
         if (g_options.pFramesOpt)
-            curFrame.print(frameString, i, g_options.pDiffOpt, g_options.pIgnoreVecOpt, g_options.pNumericKeys, &lastFrame);
+            frameToColorString(frameString, i, &lastFrame, &curFrame);
 
         printf(frameString);
         memcpy(&lastFrame, &curFrame, sizeof(r_frame));
@@ -188,17 +175,29 @@ int main(int argc, char* argv[])
     if (args.FileCount() > 1)
         soft("Multiple files recieved; accepting only the first one");
         
-    g_replayFile = fopen(args.Files()[0], "r");
-    fseek(g_replayFile, 0, SEEK_SET);
+    g_state.replayFile = fopen(args.Files()[0], "r");
+    fseek(g_state.replayFile, 0, SEEK_SET);
 
+    g_state.headerlen = parseHeader(g_state.replayFile, &g_state.header);
+
+    //Read a single byte that tells us if there are run stats
+    fseek(g_state.replayFile, g_state.headerlen, SEEK_SET);
+    g_state.hasRunStats = fgetc(g_state.replayFile);
+    if (g_state.hasRunStats) {
+        parseRunStats(g_state.replayFile, &g_state.runStats);
+    }
+
+    fread(&g_state.frameCt, 4, 1, g_state.replayFile);
+    g_state.firstFrameOffset = ftell(g_state.replayFile);
     if (g_options.pUninteractive)
         dump();
     else {
         g_interface.init();
+        g_interface.drawAtFrame(0);
         //IO loop
         while (g_interface.input()) {};
     }
 
-    fclose(g_replayFile);
+    fclose(g_state.replayFile);
     return 0;
 }

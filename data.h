@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 #include <time.h>
 
 #define IN_ATTACK		(1 << 0)
@@ -36,6 +37,7 @@ typedef unsigned char       uint8;
 typedef unsigned int        uint;
 
 #define MAX_STAGES 64
+
 
 struct vec3
 {
@@ -103,6 +105,8 @@ struct r_frame
     
     m_ meta;
 };
+extern uint frameToColorString(char* buf, uint fnum, r_frame* prev, r_frame* cur);
+extern uint frameToString(char* buf, uint fnum, r_frame* prev, r_frame* cur);
 
 struct tempStatInfo
 {
